@@ -2,7 +2,7 @@ import telebot
 from loguru import logger
 import os
 import time
-from telebot.types import InputFile
+from telebot.types import InputFile, BotCommand
 from polybot.img_proc import Img
 
 
@@ -12,7 +12,7 @@ class Bot:
         # create a new instance of the TeleBot class.
         # all communication with Telegram servers are done using self.telegram_bot_client
         self.telegram_bot_client = telebot.TeleBot(token)
-
+        self.user_state = {}  # Dictionary to track what each user is doing
         # remove any existing webhooks configured in Telegram servers
         self.telegram_bot_client.remove_webhook()
         time.sleep(0.5)
@@ -20,7 +20,10 @@ class Bot:
         # set the webhook URL
         self.telegram_bot_client.set_webhook(url=f'{telegram_chat_url}/{token}/', timeout=60)
 
+
         logger.info(f'Telegram Bot information\n\n{self.telegram_bot_client.get_me()}')
+
+
 
     def send_text(self, chat_id, text):
         self.telegram_bot_client.send_message(chat_id, text)
@@ -30,6 +33,10 @@ class Bot:
 
     def is_current_msg_photo(self, msg):
         return 'photo' in msg
+
+    def is_current_msg_text(self, msg):
+        return 'text' in msg
+
 
     def download_user_photo(self, msg):
         """
@@ -75,4 +82,45 @@ class QuoteBot(Bot):
 
 
 class ImageProcessingBot(Bot):
-    pass
+    def __init__(self, token, telegram_chat_url):
+        super().__init__(token, telegram_chat_url)
+        self.telegram_bot_client.set_my_commands([
+            BotCommand("segment", "Segment an image"),
+            BotCommand("concat", "Concatenates two images"),
+            BotCommand("salt_n_pepper", "Adds salt and pepper to the image"),
+            BotCommand("rotate", "Rotates an image clockwise")
+        ])
+
+        self.handlers = {'/segment': self.handle_segment}
+
+        self.status_handlers = {"waiting_for_segmenting_photo": self.handle_segment_photo}
+
+    def handle_message(self, msg):
+        if self.is_current_msg_photo(msg):
+            self.photo_handler(msg)
+
+        elif self.is_current_msg_text(msg) and msg['text'] in self.handlers:
+            self.handlers[msg['text']](msg)
+
+
+    def handle_segment(self,msg):
+        chat_id = msg['chat']['id']
+        self.user_state[chat_id] = 'waiting_for_segmenting_photo'
+        self.send_text(chat_id, "Please send the image you want to segment.")
+
+
+    def photo_handler(self,msg):
+        chat_id = msg['chat']['id']
+        if chat_id not in self.user_state:
+            self.send_text(chat_id, "Bro are you kidding?")
+
+        else:
+            self.status_handlers[self.user_state[chat_id]](msg)
+            self.user_state[chat_id] = None
+
+    def handle_segment_photo(self, msg):
+        img_path = self.download_user_photo(msg)
+        my_img = Img(img_path)
+        my_img.segment()
+        new_img_path = my_img.save_img()
+        self.send_photo(msg['chat']['id'], new_img_path)
