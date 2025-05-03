@@ -84,6 +84,7 @@ class QuoteBot(Bot):
 class ImageProcessingBot(Bot):
     def __init__(self, token, telegram_chat_url):
         super().__init__(token, telegram_chat_url)
+        self.concat_first_image = {}  # Stores first image per user
         self.telegram_bot_client.set_my_commands([
             BotCommand("segment", "Segment an image"),
             BotCommand("concat", "Concatenates two images"),
@@ -93,12 +94,15 @@ class ImageProcessingBot(Bot):
 
         self.handlers = {'/segment': self.handle_segment,
                          '/salt_n_pepper': self.handle_salt_n_pepper,
-                         '/rotate': self.handle_rotate
+                         '/rotate': self.handle_rotate,
+                         '/concat': self.handle_concat,
                          }
 
         self.status_handlers = {"waiting_for_segmenting_photo": self.handle_segment_photo,
                                 'waiting_for_salt_n_pepper_photo': self.handle_salt_n_pepper_photo,
                                 'waiting_for_rotate_photo': self.handle_rotate_photo,
+                                'waiting_for_concat_photo_1': self.handle_concat_photo_1,
+                                'waiting_for_concat_photo_2': self.handle_concat_photo_2,
                                 }
 
     def handle_message(self, msg):
@@ -115,11 +119,12 @@ class ImageProcessingBot(Bot):
 
     def photo_handler(self,msg):
         chat_id = msg['chat']['id']
-        if chat_id not in self.user_state:
+        if chat_id not in self.user_state or self.user_state[chat_id] is None:
             self.send_text(chat_id, "Bro are you kidding? you have to use a command first!")
         else:
             self.status_handlers[self.user_state[chat_id]](msg)
-            self.user_state[chat_id] = None
+            if self.user_state[chat_id] != 'waiting_for_concat_photo_2':
+                self.user_state[chat_id] = None
 
 
     def handle_segment(self,msg):
@@ -137,6 +142,11 @@ class ImageProcessingBot(Bot):
         self.user_state[chat_id] = 'waiting_for_rotate_photo'
         self.send_text(chat_id, "Please send the image to rotate.")
 
+    def handle_concat(self, msg):
+        chat_id = msg['chat']['id']
+        self.user_state[chat_id] = 'waiting_for_concat_photo_1'
+        self.send_text(chat_id, "Please send the first image to concatenate.")
+
     def handle_segment_photo(self, msg):
         self.process_image(msg, lambda img: img.segment())
 
@@ -145,6 +155,36 @@ class ImageProcessingBot(Bot):
 
     def handle_rotate_photo(self, msg):
         self.process_image(msg, lambda img: img.rotate())
+
+    def handle_concat_photo_1(self, msg):
+        chat_id = msg['chat']['id']
+        img_path = self.download_user_photo(msg)
+        self.concat_first_image[chat_id] = img_path
+        self.user_state[chat_id] = 'waiting_for_concat_photo_2'
+        self.send_text(chat_id, "Great. Now send the second image.")
+
+    def handle_concat_photo_2(self, msg):
+        chat_id = msg['chat']['id']
+        img1_path = self.concat_first_image.get(chat_id)
+        if not img1_path:
+            self.send_text(chat_id, "Oops! Something went wrong. Start over with /concat.")
+            return
+
+        img2_path = self.download_user_photo(msg)
+
+        img1 = Img(img1_path)
+        img2 = Img(img2_path)
+
+        try:
+            img1.concat(img2)
+            new_img_path = img1.save_img()
+            self.send_photo(chat_id, new_img_path)
+        except ValueError as e:
+            self.send_text(chat_id, f"Error: {e}")
+
+        # Clean up state
+        self.concat_first_image.pop(chat_id, None)
+        self.user_state[chat_id] = None
 
     def process_image(self, msg, processing_fn):
         img_path = self.download_user_photo(msg)
