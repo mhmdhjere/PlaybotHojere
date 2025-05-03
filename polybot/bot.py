@@ -91,9 +91,13 @@ class ImageProcessingBot(Bot):
             BotCommand("rotate", "Rotates an image clockwise")
         ])
 
-        self.handlers = {'/segment': self.handle_segment}
+        self.handlers = {'/segment': self.handle_segment,
+                         '/salt_n_pepper': self.handle_salt_n_pepper
+                         }
 
-        self.status_handlers = {"waiting_for_segmenting_photo": self.handle_segment_photo}
+        self.status_handlers = {"waiting_for_segmenting_photo": self.handle_segment_photo,
+                                'waiting_for_salt_n_pepper_photo': self.handle_salt_n_pepper_photo
+                                }
 
     def handle_message(self, msg):
         if self.is_current_msg_photo(msg):
@@ -101,12 +105,6 @@ class ImageProcessingBot(Bot):
 
         elif self.is_current_msg_text(msg) and msg['text'] in self.handlers:
             self.handlers[msg['text']](msg)
-
-
-    def handle_segment(self,msg):
-        chat_id = msg['chat']['id']
-        self.user_state[chat_id] = 'waiting_for_segmenting_photo'
-        self.send_text(chat_id, "Please send the image you want to segment.")
 
 
     def photo_handler(self,msg):
@@ -118,9 +116,29 @@ class ImageProcessingBot(Bot):
             self.status_handlers[self.user_state[chat_id]](msg)
             self.user_state[chat_id] = None
 
+
+    def handle_segment(self,msg):
+        chat_id = msg['chat']['id']
+        self.user_state[chat_id] = 'waiting_for_segmenting_photo'
+        self.send_text(chat_id, "Please send the image you want to segment.")
+
+    def handle_salt_n_pepper(self, msg):
+        chat_id = msg['chat']['id']
+        self.user_state[chat_id] = 'waiting_for_salt_n_pepper_photo'
+        self.send_text(chat_id, "Please send the image to add salt & pepper noise.")
+
     def handle_segment_photo(self, msg):
+        self.process_image(msg, lambda img: img.segment())
+
+    def handle_salt_n_pepper_photo(self, msg):
+        self.process_image(msg, lambda img: img.salt_n_pepper())
+
+    def process_image(self, msg, processing_fn):
         img_path = self.download_user_photo(msg)
         my_img = Img(img_path)
-        my_img.segment()
+        processing_fn(my_img)
         new_img_path = my_img.save_img()
         self.send_photo(msg['chat']['id'], new_img_path)
+
+
+
