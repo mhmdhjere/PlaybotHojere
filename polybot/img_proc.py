@@ -68,8 +68,11 @@ class Img:
 
 
     def concat(self, other_img, direction='horizontal'):
-        # TODO remove the `raise` below, and write your implementation
-        raise NotImplementedError()
+        if len(self.data) != len(other_img.data):
+            raise ValueError("Images must have the same height to concatenate.")
+
+        for i in range(len(self.data)):
+            self.data[i].extend(other_img.data[i])
 
     def segment(self):
         for i in range(len(self.data)):
