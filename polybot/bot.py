@@ -92,11 +92,13 @@ class ImageProcessingBot(Bot):
         ])
 
         self.handlers = {'/segment': self.handle_segment,
-                         '/salt_n_pepper': self.handle_salt_n_pepper
+                         '/salt_n_pepper': self.handle_salt_n_pepper,
+                         '/rotate': self.handle_rotate
                          }
 
         self.status_handlers = {"waiting_for_segmenting_photo": self.handle_segment_photo,
-                                'waiting_for_salt_n_pepper_photo': self.handle_salt_n_pepper_photo
+                                'waiting_for_salt_n_pepper_photo': self.handle_salt_n_pepper_photo,
+                                'waiting_for_rotate_photo': self.handle_rotate_photo,
                                 }
 
     def handle_message(self, msg):
@@ -127,11 +129,19 @@ class ImageProcessingBot(Bot):
         self.user_state[chat_id] = 'waiting_for_salt_n_pepper_photo'
         self.send_text(chat_id, "Please send the image to add salt & pepper noise.")
 
+    def handle_rotate(self, msg):
+        chat_id = msg['chat']['id']
+        self.user_state[chat_id] = 'waiting_for_rotate_photo'
+        self.send_text(chat_id, "Please send the image to rotate.")
+
     def handle_segment_photo(self, msg):
         self.process_image(msg, lambda img: img.segment())
 
     def handle_salt_n_pepper_photo(self, msg):
         self.process_image(msg, lambda img: img.salt_n_pepper())
+
+    def handle_rotate_photo(self, msg):
+        self.process_image(msg, lambda img: img.rotate())
 
     def process_image(self, msg, processing_fn):
         img_path = self.download_user_photo(msg)
