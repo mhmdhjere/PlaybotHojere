@@ -107,6 +107,8 @@ class ImageProcessingBot(Bot):
 
     def handle_message(self, msg):
         if self.is_current_msg_photo(msg):
+            if msg['caption'] in self.handlers:
+                self.handlers[msg['caption']](msg)
             self.photo_handler(msg)
         elif self.is_current_msg_text(msg) and msg['text'] in self.handlers:
             self.handlers[msg['text']](msg)
