@@ -96,11 +96,13 @@ class ImageProcessingBot(Bot):
                          '/salt_n_pepper': self.handle_salt_n_pepper,
                          '/rotate': self.handle_rotate,
                          '/concat': self.handle_concat,
+                         'Contour': self.handle_contour,
                          }
 
         self.status_handlers = {"waiting_for_segmenting_photo": self.handle_segment_photo,
                                 'waiting_for_salt_n_pepper_photo': self.handle_salt_n_pepper_photo,
                                 'waiting_for_rotate_photo': self.handle_rotate_photo,
+                                'waiting_for_contour_photo': self.handle_contour_photo,
                                 'waiting_for_concat_photo_1': self.handle_concat_photo_1,
                                 'waiting_for_concat_photo_2': self.handle_concat_photo_2,
                                 }
@@ -149,6 +151,12 @@ class ImageProcessingBot(Bot):
         self.user_state[chat_id] = 'waiting_for_concat_photo_1'
         self.send_text(chat_id, "Please send the first image to concatenate.")
 
+    def handle_contour(self, msg):
+        chat_id = msg['chat']['id']
+        self.user_state[chat_id] = 'waiting_for_contour_photo'
+        self.send_text(chat_id, "Please send the image to contour.")
+
+
     def handle_segment_photo(self, msg):
         self.process_image(msg, lambda img: img.segment())
 
@@ -157,6 +165,9 @@ class ImageProcessingBot(Bot):
 
     def handle_rotate_photo(self, msg):
         self.process_image(msg, lambda img: img.rotate())
+
+    def handle_contour_photo(self, msg):
+        self.process_image(msg, lambda img: img.contour())
 
     def handle_concat_photo_1(self, msg):
         chat_id = msg['chat']['id']
