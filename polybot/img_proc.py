@@ -63,5 +63,6 @@ class Img:
         raise NotImplementedError()
 
     def segment(self):
-        # TODO remove the `raise` below, and write your implementation
-        raise NotImplementedError()
+        for i in range(len(self.data)):
+            for j in range(len(self.data[0])):
+                self.data[i][j] = 255 if self.data[i][j] > 100 else 0
