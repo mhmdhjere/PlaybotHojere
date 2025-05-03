@@ -52,8 +52,14 @@ class Img:
             self.data[i] = res
 
     def rotate(self):
-        # TODO remove the `raise` below, and write your implementation
-        raise NotImplementedError()
+        n = len(self.data)
+
+        for i in range(n):
+            for j in range(i + 1, n):
+                self.data[i][j], self.data[j][i] = self.data[j][i], self.data[i][j]
+
+        for k in range(n):
+            self.data[k] = self.data[k][::-1]
 
     def salt_n_pepper(self):
         for i in range(len(self.data)):
