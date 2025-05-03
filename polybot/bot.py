@@ -104,16 +104,19 @@ class ImageProcessingBot(Bot):
     def handle_message(self, msg):
         if self.is_current_msg_photo(msg):
             self.photo_handler(msg)
-
         elif self.is_current_msg_text(msg) and msg['text'] in self.handlers:
             self.handlers[msg['text']](msg)
+        elif self.is_current_msg_text(msg) and self.user_state is not None:
+            self.send_text(msg['chat']['id'], "Still waiting for you to send the right thing!")
+        else:
+            self.send_text(msg['chat']['id'], "Bro if you want me to be useful use a command!")
+
 
 
     def photo_handler(self,msg):
         chat_id = msg['chat']['id']
         if chat_id not in self.user_state:
-            self.send_text(chat_id, "Bro are you kidding?")
-
+            self.send_text(chat_id, "Bro are you kidding? you have to use a command first!")
         else:
             self.status_handlers[self.user_state[chat_id]](msg)
             self.user_state[chat_id] = None
