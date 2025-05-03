@@ -52,14 +52,14 @@ class Img:
             self.data[i] = res
 
     def rotate(self):
-        n = len(self.data)
+        h, w = len(self.data), len(self.data[0])
+        rotated = [[None for _ in range(h)] for _ in range(w)]
 
-        for i in range(n):
-            for j in range(i + 1, n):
-                self.data[i][j], self.data[j][i] = self.data[j][i], self.data[i][j]
+        for i in range(h):
+            for j in range(w):
+                rotated[j][h - 1 - i] = self.data[i][j]
 
-        for k in range(n):
-            self.data[k] = self.data[k][::-1]
+        self.data = rotated
 
     def salt_n_pepper(self):
         for i in range(len(self.data)):
