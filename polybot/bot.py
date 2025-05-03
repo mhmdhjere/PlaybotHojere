@@ -160,10 +160,15 @@ class ImageProcessingBot(Bot):
 
     def handle_concat_photo_1(self, msg):
         chat_id = msg['chat']['id']
-        img_path = self.download_user_photo(msg)
-        self.concat_first_image[chat_id] = img_path
-        self.user_state[chat_id] = 'waiting_for_concat_photo_2'
-        self.send_text(chat_id, "Great. Now send the second image.")
+        try:
+            img_path = self.download_user_photo(msg)
+            self.concat_first_image[chat_id] = img_path
+            self.user_state[chat_id] = 'waiting_for_concat_photo_2'
+            self.send_text(chat_id, "Great. Now send the second image.")
+        except Exception as e:
+            self.send_text(msg['chat']['id'],
+                           f"Something went wrong while processing the image. Please try again later.")
+
 
     def handle_concat_photo_2(self, msg):
         chat_id = msg['chat']['id']
@@ -189,11 +194,14 @@ class ImageProcessingBot(Bot):
         self.user_state[chat_id] = None
 
     def process_image(self, msg, processing_fn):
-        img_path = self.download_user_photo(msg)
-        my_img = Img(img_path)
-        processing_fn(my_img)
-        new_img_path = my_img.save_img()
-        self.send_photo(msg['chat']['id'], new_img_path)
+        try:
+            img_path = self.download_user_photo(msg)
+            my_img = Img(img_path)
+            processing_fn(my_img)
+            new_img_path = my_img.save_img()
+            self.send_photo(msg['chat']['id'], new_img_path)
+        except Exception as e:
+            self.send_text(msg['chat']['id'], f"Something went wrong while processing the image. Please try again later.")
 
 
 
