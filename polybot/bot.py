@@ -86,17 +86,22 @@ class ImageProcessingBot(Bot):
         super().__init__(token, telegram_chat_url)
         self.concat_first_image = {}  # Stores first image per user
         self.telegram_bot_client.set_my_commands([
+            BotCommand("start", "Start the fun"),
             BotCommand("segment", "Segment an image"),
             BotCommand("concat", "Concatenates two images"),
             BotCommand("salt_n_pepper", "Adds salt and pepper to the image"),
-            BotCommand("rotate", "Rotates an image clockwise")
+            BotCommand("rotate", "Rotates an image clockwise"),
+            BotCommand("contour", "Contours an image")
+
         ])
 
-        self.handlers = {'/segment': self.handle_segment,
-                         '/salt_n_pepper': self.handle_salt_n_pepper,
+        self.handlers = {
+            '/start': self.handle_start,
+            '/segment': self.handle_segment,
+            '/salt_n_pepper': self.handle_salt_n_pepper,
                          '/rotate': self.handle_rotate,
                          '/concat': self.handle_concat,
-                         'Contour': self.handle_contour,
+                         '/contour': self.handle_contour,
                          }
 
         self.status_handlers = {"waiting_for_segmenting_photo": self.handle_segment_photo,
@@ -109,7 +114,7 @@ class ImageProcessingBot(Bot):
 
     def handle_message(self, msg):
         if self.is_current_msg_photo(msg):
-            if msg['caption'] in self.handlers:
+            if 'caption' in msg and msg['caption'] in self.handlers:
                 self.handlers[msg['caption']](msg)
             self.photo_handler(msg)
         elif self.is_current_msg_text(msg) and msg['text'] in self.handlers:
@@ -130,6 +135,10 @@ class ImageProcessingBot(Bot):
             if self.user_state[chat_id] != 'waiting_for_concat_photo_2':
                 self.user_state[chat_id] = None
 
+
+    def handle_start(self,msg):
+        chat_id = msg['chat']['id']
+        self.send_text(chat_id, "Send any any command from the list and let the fun begin!")
 
     def handle_segment(self,msg):
         chat_id = msg['chat']['id']
