@@ -4,7 +4,7 @@ import os
 import time
 from telebot.types import InputFile, BotCommand
 from polybot.img_proc import Img
-
+import requests
 
 class Bot:
 
@@ -91,7 +91,8 @@ class ImageProcessingBot(Bot):
             BotCommand("concat", "Concatenates two images"),
             BotCommand("salt_n_pepper", "Adds salt and pepper to the image"),
             BotCommand("rotate", "Rotates an image clockwise"),
-            BotCommand("contour", "Contours an image")
+            BotCommand("contour", "Contours an image"),
+            BotCommand("detect", "Detect objects with YOLO")
 
         ])
 
@@ -99,10 +100,12 @@ class ImageProcessingBot(Bot):
             '/start': self.handle_start,
             '/segment': self.handle_segment,
             '/salt_n_pepper': self.handle_salt_n_pepper,
-                         '/rotate': self.handle_rotate,
-                         '/concat': self.handle_concat,
-                         '/contour': self.handle_contour,
-                         }
+            '/rotate': self.handle_rotate,
+            '/concat': self.handle_concat,
+            '/contour': self.handle_contour,
+            '/detect': self.handle_detect,
+
+        }
 
         self.status_handlers = {"waiting_for_segmenting_photo": self.handle_segment_photo,
                                 'waiting_for_salt_n_pepper_photo': self.handle_salt_n_pepper_photo,
@@ -110,6 +113,7 @@ class ImageProcessingBot(Bot):
                                 'waiting_for_contour_photo': self.handle_contour_photo,
                                 'waiting_for_concat_photo_1': self.handle_concat_photo_1,
                                 'waiting_for_concat_photo_2': self.handle_concat_photo_2,
+                                'waiting_for_detection_photo': self.handle_detection_photo,
                                 }
 
     def handle_message(self, msg):
@@ -134,6 +138,11 @@ class ImageProcessingBot(Bot):
             self.status_handlers[self.user_state[chat_id]](msg)
             if self.user_state[chat_id] != 'waiting_for_concat_photo_2':
                 self.user_state[chat_id] = None
+
+    def handle_detect(self, msg):
+        chat_id = msg['chat']['id']
+        self.user_state[chat_id] = 'waiting_for_detection_photo'
+        self.send_text(chat_id, "Send an image to detect objects using YOLO.")
 
 
     def handle_start(self,msg):
@@ -212,6 +221,33 @@ class ImageProcessingBot(Bot):
         # Clean up state
         self.concat_first_image.pop(chat_id, None)
         self.user_state[chat_id] = None
+
+    def handle_detection_photo(self, msg):
+        chat_id = msg['chat']['id']
+        try:
+            image_path = self.download_user_photo(msg)
+            result = self.send_to_yolo(image_path)
+
+            labels = result.get("labels", [])
+            count = result.get("detection_count", 0)
+            prediction_image_url = result.get("predicted_image_url")
+
+            caption = f"Detected {count} object(s): {', '.join(labels)}"
+            if prediction_image_url:
+                self.send_photo(chat_id, prediction_image_url)
+            else:
+                self.send_text(chat_id, caption)
+        except Exception as e:
+            self.send_text(chat_id, f"Error during detection: {e}")
+        finally:
+            self.user_state[chat_id] = None
+
+    def send_to_yolo(self, image_path):
+        yolo_url = "http://10.0.1.26:8080/predict"  # update to your IP or ngrok domain
+        with open(image_path, "rb") as f:
+            files = {"file": f}
+            response = requests.post(yolo_url, files=files)
+        return response.json()
 
     def process_image(self, msg, processing_fn):
         try:
