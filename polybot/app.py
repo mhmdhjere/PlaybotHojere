@@ -1,6 +1,7 @@
 import flask
 from flask import request
 import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from bot import Bot, QuoteBot, ImageProcessingBot
 
 app = flask.Flask(__name__)
