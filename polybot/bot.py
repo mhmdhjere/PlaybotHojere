@@ -3,7 +3,7 @@ from loguru import logger
 import os
 import time
 from telebot.types import InputFile, BotCommand
-from polybot.img_proc import Img
+from img_proc import Img
 import requests
 
 class Bot:
