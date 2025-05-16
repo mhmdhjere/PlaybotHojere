@@ -91,7 +91,7 @@ class ImageProcessingBot(Bot):
             BotCommand("concat", "Concatenates two images"),
             BotCommand("salt_n_pepper", "Adds salt and pepper to the image"),
             BotCommand("rotate", "Rotates an image clockwise"),
-            BotCommand("contour", "Contours an image"),
+            BotCommand("Contour", "Contours an image"),
             BotCommand("detect", "Detect objects with YOLO")
 
         ])
