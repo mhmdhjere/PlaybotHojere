@@ -33,8 +33,8 @@ jobs:
 
     - name: Upload and enable systemd service
       run: |
-        ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.USER }}@${{ secrets.HOST }} "bash -s" <<EOF
-          cat <<EOL | sudo tee /etc/systemd/system/mypolybot.service
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.USER }}@${{ secrets.HOST }} "bash -s" <<'EOF'
+          sudo bash -c 'cat > /etc/systemd/system/mypolybot.service' <<EOL
 [Unit]
 Description=Telegram PolyBot
 After=network.target
