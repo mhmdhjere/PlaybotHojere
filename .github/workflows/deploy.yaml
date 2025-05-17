@@ -33,7 +33,7 @@ jobs:
 
     - name: Upload and enable systemd service
       run: |
-        ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.USER }}@${{ secrets.HOST }} "bash -s" <<'EOF'
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.USER }}@${{ secrets.HOST }} "bash -s" <<EOF
           SERVICE_FILE="/etc/systemd/system/mypolybot.service"
           sudo sh -c "echo '[Unit]' > \$SERVICE_FILE"
           sudo sh -c "echo 'Description=Telegram PolyBot' >> \$SERVICE_FILE"
@@ -57,4 +57,5 @@ jobs:
           sudo systemctl enable mypolybot
           sudo systemctl restart mypolybot
 EOF
+
 
