@@ -75,6 +75,7 @@ class Img:
             self.data[i].extend(other_img.data[i])
 
     def segment(self):
+        echo
         for i in range(len(self.data)):
             for j in range(len(self.data[0])):
                 self.data[i][j] = 255 if self.data[i][j] > 100 else 0
