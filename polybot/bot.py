@@ -100,7 +100,7 @@ class ImageProcessingBot(Bot):
 
         self.handlers = {
             '/start': self.handle_start,
-            '/segment': self.handle_segment,
+            #'/segment': self.handle_segment,
             '/salt_n_pepper': self.handle_salt_n_pepper,
             '/rotate': self.handle_rotate,
             '/concat': self.handle_concat,
