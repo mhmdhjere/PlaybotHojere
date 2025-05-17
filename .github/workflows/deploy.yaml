@@ -33,29 +33,28 @@ jobs:
 
     - name: Upload and enable systemd service
       run: |
-        ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.USER }}@${{ secrets.HOST }} "bash -s" <<EOF
-          SERVICE_FILE="/etc/systemd/system/mypolybot.service"
-          sudo sh -c "echo '[Unit]' > \$SERVICE_FILE"
-          sudo sh -c "echo 'Description=Telegram PolyBot' >> \$SERVICE_FILE"
-          sudo sh -c "echo 'After=network.target' >> \$SERVICE_FILE"
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.USER }}@${{ secrets.HOST }} "
+          SERVICE_FILE=/etc/systemd/system/mypolybot.service
 
-          sudo sh -c "echo '' >> \$SERVICE_FILE"
-          sudo sh -c "echo '[Service]' >> \$SERVICE_FILE"
-          sudo sh -c "echo 'WorkingDirectory=/home/${{ secrets.USER }}/PlaybotHojere/polybot' >> \$SERVICE_FILE"
-          sudo sh -c \"echo 'ExecStart=/home/${{ secrets.USER }}/PlaybotHojere/polybot/venv/bin/python3 /home/${{ secrets.USER }}/PlaybotHojere/polybot/app.py' >> \$SERVICE_FILE\"
-          sudo sh -c \"echo 'Environment=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}' >> \$SERVICE_FILE\"
-          sudo sh -c \"echo 'Environment=BOT_APP_URL=${{ secrets.BOT_APP_URL }}' >> \$SERVICE_FILE\"
-          sudo sh -c "echo 'Restart=always' >> \$SERVICE_FILE"
-          sudo sh -c "echo 'User=${{ secrets.USER }}' >> \$SERVICE_FILE"
+          sudo bash -c \"echo '[Unit]' > \$SERVICE_FILE\"
+          sudo bash -c \"echo 'Description=Telegram PolyBot' >> \$SERVICE_FILE\"
+          sudo bash -c \"echo 'After=network.target' >> \$SERVICE_FILE\"
 
-          sudo sh -c "echo '' >> \$SERVICE_FILE"
-          sudo sh -c "echo '[Install]' >> \$SERVICE_FILE"
-          sudo sh -c "echo 'WantedBy=multi-user.target' >> \$SERVICE_FILE"
+          sudo bash -c \"echo '' >> \$SERVICE_FILE\"
+          sudo bash -c \"echo '[Service]' >> \$SERVICE_FILE\"
+          sudo bash -c \"echo 'WorkingDirectory=/home/${{ secrets.USER }}/PlaybotHojere/polybot' >> \$SERVICE_FILE\"
+          sudo bash -c \"echo 'ExecStart=/home/${{ secrets.USER }}/PlaybotHojere/polybot/venv/bin/python3 /home/${{ secrets.USER }}/PlaybotHojere/polybot/app.py' >> \$SERVICE_FILE\"
+          sudo bash -c \"echo 'Environment=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}' >> \$SERVICE_FILE\"
+          sudo bash -c \"echo 'Environment=BOT_APP_URL=${{ secrets.BOT_APP_URL }}' >> \$SERVICE_FILE\"
+          sudo bash -c \"echo 'Restart=always' >> \$SERVICE_FILE\"
+          sudo bash -c \"echo 'User=${{ secrets.USER }}' >> \$SERVICE_FILE\"
+
+          sudo bash -c \"echo '' >> \$SERVICE_FILE\"
+          sudo bash -c \"echo '[Install]' >> \$SERVICE_FILE\"
+          sudo bash -c \"echo 'WantedBy=multi-user.target' >> \$SERVICE_FILE\"
 
           sudo systemctl daemon-reexec
           sudo systemctl daemon-reload
           sudo systemctl enable mypolybot
           sudo systemctl restart mypolybot
-EOF
-
-
+        "
