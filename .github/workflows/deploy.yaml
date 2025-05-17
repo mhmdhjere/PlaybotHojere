@@ -18,22 +18,23 @@ jobs:
         echo "${{ secrets.SSH_KEY }}" > private_key.pem
         chmod 600 private_key.pem
 
-    - name: Copy code to EC2 and install dependencies
+    - name: Copy code and install dependencies
       run: |
         ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.USER }}@${{ secrets.HOST }} '
-          sudo apt update &&
-          sudo apt install -y git python3-pip python3-venv &&
-          rm -rf PlaybotHojere &&
-          git clone https://github.com/${{ github.repository }} PlaybotHojere &&
-          cd PlaybotHojere/polybot &&
-          python3 -m venv venv &&
-          source venv/bin/activate &&
+          sudo apt update
+          sudo apt install -y git python3-pip python3-venv
+          rm -rf PlaybotHojere
+          git clone https://github.com/${{ github.repository }} PlaybotHojere
+          cd PlaybotHojere/polybot
+          python3 -m venv venv
+          source venv/bin/activate
           pip install -r requirements.txt
         '
 
-    - name: Upload systemd service
+    - name: Upload and enable systemd service
       run: |
-        scp -o StrictHostKeyChecking=no -i private_key.pem <<EOF > mypolybot.service
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.USER }}@${{ secrets.HOST }} "bash -s" <<EOF
+          cat <<EOL | sudo tee /etc/systemd/system/mypolybot.service
 [Unit]
 Description=Telegram PolyBot
 After=network.target
@@ -48,14 +49,10 @@ User=${{ secrets.USER }}
 
 [Install]
 WantedBy=multi-user.target
-EOF
+EOL
 
-        scp -o StrictHostKeyChecking=no -i private_key.pem mypolybot.service ${{ secrets.USER }}@${{ secrets.HOST }}:/tmp/mypolybot.service
-
-        ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.USER }}@${{ secrets.HOST }} '
-          sudo mv /tmp/mypolybot.service /etc/systemd/system/mypolybot.service &&
-          sudo systemctl daemon-reexec &&
-          sudo systemctl daemon-reload &&
-          sudo systemctl enable mypolybot &&
+          sudo systemctl daemon-reexec
+          sudo systemctl daemon-reload
+          sudo systemctl enable mypolybot
           sudo systemctl restart mypolybot
-        '
+EOF
