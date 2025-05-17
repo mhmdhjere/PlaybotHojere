@@ -1,0 +1,58 @@
+name: Deploy Polybot to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up SSH key
+      run: |
+        echo "${{ secrets.SSH_KEY }}" > private_key.pem
+        chmod 600 private_key.pem
+
+    - name: Copy code to EC2 and install dependencies
+      run: |
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.USER }}@${{ secrets.HOST }} << 'EOF'
+          sudo apt update
+          sudo apt install -y git python3-pip python3-venv
+          rm -rf PlaybotHojere
+          git clone https://github.com/${{ github.repository }} PlaybotHojere
+          cd PlaybotHojere/polybot
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+        EOF
+
+    - name: Upload systemd service
+      run: |
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.USER }}@${{ secrets.HOST }} << EOF
+          SERVICE_FILE=/etc/systemd/system/mypolybot.service
+          sudo bash -c "cat > \$SERVICE_FILE" << EOL
+[Unit]
+Description=Telegram PolyBot
+After=network.target
+
+[Service]
+WorkingDirectory=/home/${{ secrets.USER }}/PlaybotHojere/polybot
+ExecStart=/home/${{ secrets.USER }}/PlaybotHojere/polybot/venv/bin/python3 /home/${{ secrets.USER }}/PlaybotHojere/polybot/app.py
+Environment=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+Environment=BOT_APP_URL=${{ secrets.BOT_APP_URL }}
+Restart=always
+User=${{ secrets.USER }}
+
+[Install]
+WantedBy=multi-user.target
+EOL
+          sudo systemctl daemon-reexec
+          sudo systemctl daemon-reload
+          sudo systemctl enable mypolybot
+          sudo systemctl restart mypolybot
+        EOF
