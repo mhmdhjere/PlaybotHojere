@@ -1,9 +1,11 @@
 import telebot
 from loguru import logger
 import os
+import sys
 import time
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from telebot.types import InputFile, BotCommand
-from img_proc import Img
+from polybot.img_proc import Img
 import requests
 
 class Bot:
@@ -91,7 +93,7 @@ class ImageProcessingBot(Bot):
             BotCommand("concat", "Concatenates two images"),
             BotCommand("salt_n_pepper", "Adds salt and pepper to the image"),
             BotCommand("rotate", "Rotates an image clockwise"),
-            BotCommand("Contour", "Contours an image"),
+            BotCommand("contour", "Contours an image"),
             BotCommand("detect", "Detect objects with YOLO")
 
         ])
@@ -102,7 +104,7 @@ class ImageProcessingBot(Bot):
             '/salt_n_pepper': self.handle_salt_n_pepper,
             '/rotate': self.handle_rotate,
             '/concat': self.handle_concat,
-            '/contour': self.handle_contour,
+            'Contour': self.handle_contour,
             '/detect': self.handle_detect,
 
         }
