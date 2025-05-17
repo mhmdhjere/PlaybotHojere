@@ -1,4 +1,4 @@
-name: Deploy Polybot to EC2
+name: Test and Deploy Polybot to EC2
 
 on:
   push:
@@ -6,55 +6,79 @@ on:
       - main
 
 jobs:
+  TestImgProcessingChatbotApp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          pip install -r polybot/requirements.txt
+      - name: Test filters
+        run: |
+          echo -e "\n\nTesting concat()\n"
+          python -m polybot.test.test_concat
+          
+          echo -e "\n\nTesting rotate()\n"
+          python -m polybot.test.test_rotate
+          
+          echo -e "\n\nTesting salt_n_pepper()\n"
+          python -m polybot.test.test_salt_n_pepper
+          
+          echo -e "\n\nTesting segment()\n"
+          python -m polybot.test.test_segment
+      - name: Test bot
+        run: |
+          python -m polybot.test.test_telegram_bot
+
   deploy:
     runs-on: ubuntu-latest
-
+    needs: TestImgProcessingChatbotApp  # Wait for tests to pass
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up SSH key
-      run: |
-        echo "${{ secrets.SSH_KEY }}" > private_key.pem
-        chmod 600 private_key.pem
+      - name: Set up SSH key
+        run: |
+          echo "${{ secrets.SSH_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
 
-    - name: Copy code and install dependencies
-      run: |
-        ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.USER }}@${{ secrets.HOST }} '
-          sudo apt update
-          sudo apt install -y git python3-pip python3-venv
-          rm -rf PlaybotHojere
-          git clone https://github.com/${{ github.repository }} PlaybotHojere
-          cd PlaybotHojere/polybot
-          python3 -m venv venv
-          source venv/bin/activate
-          pip install -r requirements.txt
-        '
+      - name: Copy code and install dependencies
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.USER }}@${{ secrets.HOST }} '
+            sudo apt update
+            sudo apt install -y git python3-pip python3-venv
+            rm -rf PlaybotHojere
+            git clone https://github.com/${{ github.repository }} PlaybotHojere
+            cd PlaybotHojere/polybot
+            python3 -m venv venv
+            source venv/bin/activate
+            pip install -r requirements.txt
+          '
 
-    - name: Upload and enable systemd service
-      run: |
-        ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.USER }}@${{ secrets.HOST }} "
-          SERVICE_FILE=/etc/systemd/system/mypolybot.service
+      - name: Upload and enable systemd service
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.USER }}@${{ secrets.HOST }} "
+            SERVICE_FILE=/etc/systemd/system/mypolybot.service
 
-          sudo bash -c \"echo '[Unit]' > \$SERVICE_FILE\"
-          sudo bash -c \"echo 'Description=Telegram PolyBot' >> \$SERVICE_FILE\"
-          sudo bash -c \"echo 'After=network.target' >> \$SERVICE_FILE\"
+            sudo bash -c \"echo '[Unit]' > \$SERVICE_FILE\"
+            sudo bash -c \"echo 'Description=Telegram PolyBot' >> \$SERVICE_FILE\"
+            sudo bash -c \"echo 'After=network.target' >> \$SERVICE_FILE\"
 
-          sudo bash -c \"echo '' >> \$SERVICE_FILE\"
-          sudo bash -c \"echo '[Service]' >> \$SERVICE_FILE\"
-          sudo bash -c \"echo 'WorkingDirectory=/home/${{ secrets.USER }}/PlaybotHojere/polybot' >> \$SERVICE_FILE\"
-          sudo bash -c \"echo 'ExecStart=/home/${{ secrets.USER }}/PlaybotHojere/polybot/venv/bin/python3 /home/${{ secrets.USER }}/PlaybotHojere/polybot/app.py' >> \$SERVICE_FILE\"
-          sudo bash -c \"echo 'Environment=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}' >> \$SERVICE_FILE\"
-          sudo bash -c \"echo 'Environment=BOT_APP_URL=${{ secrets.BOT_APP_URL }}' >> \$SERVICE_FILE\"
-          sudo bash -c \"echo 'Restart=always' >> \$SERVICE_FILE\"
-          sudo bash -c \"echo 'User=${{ secrets.USER }}' >> \$SERVICE_FILE\"
+            sudo bash -c \"echo '' >> \$SERVICE_FILE\"
+            sudo bash -c \"echo '[Service]' >> \$SERVICE_FILE\"
+            sudo bash -c \"echo 'WorkingDirectory=/home/${{ secrets.USER }}/PlaybotHojere/polybot' >> \$SERVICE_FILE\"
+            sudo bash -c \"echo 'ExecStart=/home/${{ secrets.USER }}/PlaybotHojere/polybot/venv/bin/python3 /home/${{ secrets.USER }}/PlaybotHojere/polybot/app.py' >> \$SERVICE_FILE\"
+            sudo bash -c \"echo 'Environment=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}' >> \$SERVICE_FILE\"
+            sudo bash -c \"echo 'Environment=BOT_APP_URL=${{ secrets.BOT_APP_URL }}' >> \$SERVICE_FILE\"
+            sudo bash -c \"echo 'Restart=always' >> \$SERVICE_FILE\"
+            sudo bash -c \"echo 'User=${{ secrets.USER }}' >> \$SERVICE_FILE\"
 
-          sudo bash -c \"echo '' >> \$SERVICE_FILE\"
-          sudo bash -c \"echo '[Install]' >> \$SERVICE_FILE\"
-          sudo bash -c \"echo 'WantedBy=multi-user.target' >> \$SERVICE_FILE\"
+            sudo bash -c \"echo '' >> \$SERVICE_FILE\"
+            sudo bash -c \"echo '[Install]' >> \$SERVICE_FILE\"
+            sudo bash -c \"echo 'WantedBy=multi-user.target' >> \$SERVICE_FILE\"
 
-          sudo systemctl daemon-reexec
-          sudo systemctl daemon-reload
-          sudo systemctl enable mypolybot
-          sudo systemctl restart mypolybot
-        "
+            sudo systemctl daemon-reexec
+            sudo systemctl daemon-reload
+            sudo systemctl enable mypolybot
+            sudo systemctl restart mypolybot
+          "
