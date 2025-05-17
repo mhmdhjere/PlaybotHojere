@@ -1,5 +1,4 @@
 # The Polybot Service: Python Project [![][autotest_badge]][autotest_workflow]
-## Dummy 
 
 ## Background
 In this project, you develop a Python chatbot application which applies filters to images send by users to a Telegram bot. 
