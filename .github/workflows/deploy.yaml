@@ -4,10 +4,13 @@ on:
   push:
     branches:
       - main
-
+  pull_request:
+    branches:
+      - main
 jobs:
   TestImgProcessingChatbotApp:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
@@ -32,7 +35,8 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: TestImgProcessingChatbotApp  # Wait for tests to pass
+    if: github.event_name == 'push'
+    needs: []
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
