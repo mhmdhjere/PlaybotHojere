@@ -89,7 +89,7 @@ class ImageProcessingBot(Bot):
         self.concat_first_image = {}  # Stores first image per user
         self.telegram_bot_client.set_my_commands([
             BotCommand("start", "Start the fun"),
-            #BotCommand("segment", "Segment an image"),
+            BotCommand("segment", "Segment an image"),
             BotCommand("concat", "Concatenates two images"),
             BotCommand("salt_n_pepper", "Adds salt and pepper to the image"),
             BotCommand("rotate", "Rotates an image clockwise"),
@@ -100,7 +100,7 @@ class ImageProcessingBot(Bot):
 
         self.handlers = {
             '/start': self.handle_start,
-            #'/segment': self.handle_segment,
+            '/segment': self.handle_segment,
             '/salt_n_pepper': self.handle_salt_n_pepper,
             '/rotate': self.handle_rotate,
             '/concat': self.handle_concat,
